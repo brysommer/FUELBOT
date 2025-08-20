@@ -1,10 +1,12 @@
 import TelegramBot, { Message } from "node-telegram-bot-api";
-import { prisma } from "@/lib/prisma";
+import { prisma } from './lib/prisma';
+import { fuelRecord } from "./fuel-record";
 
 const token = process.env.TELEGRAM_BOT_TOKEN as string;
 const loggertoken = process.env.TELEGRAM_LOGGER_BOT_TOKEN as string;
 const bot = new TelegramBot(token, { polling: true });
 const loggerBot = new TelegramBot(loggertoken, { polling: true });
+const loggerChat = process.env.LOGGER_CHAT as string;
 
 interface UserData {
   step: number;
@@ -14,6 +16,8 @@ interface UserData {
 }
 
 const users: Record<number, UserData> = {};
+
+fuelRecord();
 
 const createDriver = async (chatId: number) => {
   const user = users[chatId];
@@ -26,11 +30,13 @@ const createDriver = async (chatId: number) => {
     data: {
       phone: user.phone,
       carNumber: user.carNumber,
-      tankVolume: user.tankVolume
+      tankVolume: user.tankVolume,
+      chatId,
+      step: 0
     },
   });
 
-  loggerBot.sendMessage("Driver created:", driver);
+  loggerBot.sendMessage(loggerChat, `Водія створено: телефон ` + driver.phone + ` номер авто: ` + driver.carNumber );
   return driver;
 }
 
@@ -85,7 +91,15 @@ bot.on("message", async (msg: Message) => {
     if (driver) {
       bot.sendMessage(
         chatId,
-        `✅ Реєстрацію завершено!\n\n📱 Телефон: ${driver.phone}\n🚘 Авто: ${driver.carNumber}\n⛽ Бак: ${driver.tankVolume} л\n\nТепер ви можете реєструвати ваші заправки.`
+        `✅ Реєстрацію завершено!\n\n📱 Телефон: ${driver.phone}\n🚘 Авто: ${driver.carNumber}\n⛽ Бак: ${driver.tankVolume} л\n\nТепер ви можете реєструвати ваші заправки.`, {
+          reply_markup: {
+            keyboard: [
+              [{ text: "Заправка⛽️" }]
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: false
+          }
+        }
       );
     } else {
       bot.sendMessage(chatId, 'Не вдалося завершити реєстрацію, спробуйте спочатку або зверніться до адміністратора', {
