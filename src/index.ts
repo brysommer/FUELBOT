@@ -1,12 +1,16 @@
 import TelegramBot, { Message } from "node-telegram-bot-api";
 import { prisma } from './lib/prisma';
 import { fuelRecord } from "./fuel-record";
+import { forwardPictures } from "./forward-pictures";
+import { adminBotFunction } from "./admin-bot";
 
 const token = process.env.TELEGRAM_BOT_TOKEN as string;
 const loggertoken = process.env.TELEGRAM_LOGGER_BOT_TOKEN as string;
+const adminToken = process.env.ADMIN_BOT_BOT as string;
 const bot = new TelegramBot(token, { polling: true });
 const loggerBot = new TelegramBot(loggertoken, { polling: true });
 const loggerChat = process.env.LOGGER_CHAT as string;
+const adminBot = new TelegramBot(adminToken, { polling: true });
 
 interface UserData {
   step: number;
@@ -18,6 +22,8 @@ interface UserData {
 const users: Record<number, UserData> = {};
 
 fuelRecord();
+forwardPictures();
+adminBotFunction();
 
 const createDriver = async (chatId: number) => {
   const user = users[chatId];
@@ -43,12 +49,30 @@ const createDriver = async (chatId: number) => {
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
 
+  const driver = await prisma.driver.findUnique({
+    where: { chatId: BigInt(chatId) }
+  });
+
+  if (driver) return bot.sendMessage(chatId, 'Ви вже зареєстровані, можете додавати заправки',
+
+     {
+      reply_markup: {
+        keyboard: [[{ text: "📱 Поділитися номером", request_contact: true }]],
+        one_time_keyboard: true,
+        resize_keyboard: true,
+      },
+    }
+
+  )
+
   users[chatId] = { step: 1 };
 
   bot.sendMessage(chatId, "Привіт! Для початку поділіться своїм номером телефону:", {
     reply_markup: {
-      keyboard: [[{ text: "📱 Поділитися номером", request_contact: true }]],
-      one_time_keyboard: true,
+      keyboard: [
+              [{ text: "Заправка⛽️" }]
+            ],
+      one_time_keyboard: false,
       resize_keyboard: true,
     },
   });
@@ -119,5 +143,7 @@ bot.on("message", async (msg: Message) => {
 
 export {
   bot,
-  loggerBot
+  loggerBot,
+  loggerChat,
+  adminBot
 }
