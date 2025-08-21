@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import TelegramBot, { Message } from "node-telegram-bot-api";
 import { prisma } from './lib/prisma';
 import { fuelRecord } from "./fuel-record";
