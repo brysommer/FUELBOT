@@ -4,6 +4,7 @@ import { prisma } from './lib/prisma';
 import { fuelRecord } from "./fuel-record";
 import { forwardPictures } from "./forward-pictures";
 import { adminBotFunction } from "./admin-bot";
+import { exportcsv } from './export-csv';
 
 const token = process.env.TELEGRAM_BOT_TOKEN as string;
 const loggertoken = process.env.TELEGRAM_LOGGER_BOT_TOKEN as string;
@@ -25,6 +26,7 @@ const users: Record<number, UserData> = {};
 fuelRecord();
 forwardPictures();
 adminBotFunction();
+exportcsv();
 
 const createDriver = async (chatId: number) => {
   const user = users[chatId];
