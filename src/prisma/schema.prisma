@@ -34,9 +34,10 @@ model FuelRecord {
   driver      Driver   @relation(fields: [driverId], references: [id])
   volume      Float    // обсяг заправки в літрах
   price       Float    // ціна за літр
-  odometr     BigInt?   // одометр
+  odometr     BigInt?  // одометр
   total       Float    // загальна сума за заправку (volume * price)
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
+  comment     String?  // нове поле для коментаря, необов’язкове
 }
 

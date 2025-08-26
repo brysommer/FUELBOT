@@ -24,7 +24,15 @@ const forwardPictures = () => {
             caption: `Фото від користувача ${driver?.carNumber}`,
           });
       
-          await bot.sendMessage(chatId, 'Фото успішно переслано адміністратору')
+          await bot.sendMessage(chatId, 'Фото успішно переслано адміністратору',
+              {
+                reply_markup: {
+                  keyboard: [[{ text: "Заправка⛽️" }]],
+                  resize_keyboard: true,
+                  one_time_keyboard: false
+                }
+              }
+          )
       
         } catch (error) {
           bot.sendMessage(chatId, "Помилка при пересиланні фото: " + error);

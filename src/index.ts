@@ -28,7 +28,17 @@ forwardPictures();
 adminBotFunction();
 exportcsv();
 
+
+
 const createDriver = async (chatId: number) => {
+
+  await bot.setMyCommands([
+
+      { command: "/start", description: "Старт бота" },
+      { command: "Заправка⛽️", description: "Реєстрація заправки ⛽️" }
+
+  ]);
+
   const user = users[chatId];
 
   if (!user || !user.phone || !user.carNumber) {
@@ -58,10 +68,12 @@ bot.onText(/\/start/, async (msg) => {
 
   if (driver) return bot.sendMessage(chatId, 'Ви вже зареєстровані, можете додавати заправки',
 
-     {
+    {
       reply_markup: {
-        keyboard: [[{ text: "📱 Поділитися номером", request_contact: true }]],
-        one_time_keyboard: true,
+        keyboard: [
+                [{ text: "Заправка⛽️" }]
+              ],
+        one_time_keyboard: false,
         resize_keyboard: true,
       },
     }
@@ -73,7 +85,7 @@ bot.onText(/\/start/, async (msg) => {
   bot.sendMessage(chatId, "Привіт! Для початку поділіться своїм номером телефону:", {
     reply_markup: {
       keyboard: [
-              [{ text: "Заправка⛽️" }]
+              [{ text: "Надіслати контакт", request_contact: true }]
             ],
       one_time_keyboard: false,
       resize_keyboard: true,
@@ -81,8 +93,26 @@ bot.onText(/\/start/, async (msg) => {
   });
 });
 
-bot.on("contact", (msg: Message) => {
+bot.on("contact", async (msg: Message) => {
   const chatId = msg.chat.id;
+
+  const driver = await prisma.driver.findUnique(
+    {where: { chatId: BigInt(chatId) }} 
+  )
+
+  if (driver) return bot.sendMessage(chatId, 'Ви вже зареєстровані, можете додавати заправки',
+
+    {
+      reply_markup: {
+        keyboard: [
+                [{ text: "Заправка⛽️" }]
+              ],
+        one_time_keyboard: false,
+        resize_keyboard: true,
+      },
+    }
+
+ )
 
   if (!users[chatId]) return;
 

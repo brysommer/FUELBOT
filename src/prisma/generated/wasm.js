@@ -139,7 +139,8 @@ exports.Prisma.FuelRecordScalarFieldEnum = {
   odometr: 'odometr',
   total: 'total',
   date: 'date',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  comment: 'comment'
 };
 
 exports.Prisma.SortOrder = {

@@ -5,6 +5,13 @@ import { prisma } from "./lib/prisma";
 
 const adminBotFunction = () => {
   adminBot.onText(/\/start/, async (msg: Message) => {
+
+    await adminBot.setMyCommands([
+
+      { command: "/start", description: "Почати спочатку" },
+
+    ]);
+
     const chatId = msg.chat.id;
 
     // Отримуємо всіх водіїв
@@ -83,7 +90,7 @@ const adminBotFunction = () => {
       }
 
       const driver = await prisma.driver.findUnique({
-        where: { chatId: BigInt(chatId) }
+        where: { id: driverId }
       });
       
       const records = await prisma.fuelRecord.findMany({
@@ -125,7 +132,7 @@ const adminBotFunction = () => {
 {
   reply_markup: {
     inline_keyboard: [
-      [{ text: "📊 Вивести у CSV", callback_data: "export_csv" }]
+      [{ text: "📊 Вивести у CSV", callback_data: `export_csv_${period}_${driverId}` }]
     ]
   }
 }

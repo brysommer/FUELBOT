@@ -2171,6 +2171,7 @@ export namespace Prisma {
     total: number | null
     date: Date | null
     createdAt: Date | null
+    comment: string | null
   }
 
   export type FuelRecordMaxAggregateOutputType = {
@@ -2182,6 +2183,7 @@ export namespace Prisma {
     total: number | null
     date: Date | null
     createdAt: Date | null
+    comment: string | null
   }
 
   export type FuelRecordCountAggregateOutputType = {
@@ -2193,6 +2195,7 @@ export namespace Prisma {
     total: number
     date: number
     createdAt: number
+    comment: number
     _all: number
   }
 
@@ -2224,6 +2227,7 @@ export namespace Prisma {
     total?: true
     date?: true
     createdAt?: true
+    comment?: true
   }
 
   export type FuelRecordMaxAggregateInputType = {
@@ -2235,6 +2239,7 @@ export namespace Prisma {
     total?: true
     date?: true
     createdAt?: true
+    comment?: true
   }
 
   export type FuelRecordCountAggregateInputType = {
@@ -2246,6 +2251,7 @@ export namespace Prisma {
     total?: true
     date?: true
     createdAt?: true
+    comment?: true
     _all?: true
   }
 
@@ -2344,6 +2350,7 @@ export namespace Prisma {
     total: number
     date: Date
     createdAt: Date
+    comment: string | null
     _count: FuelRecordCountAggregateOutputType | null
     _avg: FuelRecordAvgAggregateOutputType | null
     _sum: FuelRecordSumAggregateOutputType | null
@@ -2374,6 +2381,7 @@ export namespace Prisma {
     total?: boolean
     date?: boolean
     createdAt?: boolean
+    comment?: boolean
     driver?: boolean | DriverDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["fuelRecord"]>
 
@@ -2386,6 +2394,7 @@ export namespace Prisma {
     total?: boolean
     date?: boolean
     createdAt?: boolean
+    comment?: boolean
     driver?: boolean | DriverDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["fuelRecord"]>
 
@@ -2398,6 +2407,7 @@ export namespace Prisma {
     total?: boolean
     date?: boolean
     createdAt?: boolean
+    comment?: boolean
     driver?: boolean | DriverDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["fuelRecord"]>
 
@@ -2410,9 +2420,10 @@ export namespace Prisma {
     total?: boolean
     date?: boolean
     createdAt?: boolean
+    comment?: boolean
   }
 
-  export type FuelRecordOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "driverId" | "volume" | "price" | "odometr" | "total" | "date" | "createdAt", ExtArgs["result"]["fuelRecord"]>
+  export type FuelRecordOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "driverId" | "volume" | "price" | "odometr" | "total" | "date" | "createdAt" | "comment", ExtArgs["result"]["fuelRecord"]>
   export type FuelRecordInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     driver?: boolean | DriverDefaultArgs<ExtArgs>
   }
@@ -2437,6 +2448,7 @@ export namespace Prisma {
       total: number
       date: Date
       createdAt: Date
+      comment: string | null
     }, ExtArgs["result"]["fuelRecord"]>
     composites: {}
   }
@@ -2869,6 +2881,7 @@ export namespace Prisma {
     readonly total: FieldRef<"FuelRecord", 'Float'>
     readonly date: FieldRef<"FuelRecord", 'DateTime'>
     readonly createdAt: FieldRef<"FuelRecord", 'DateTime'>
+    readonly comment: FieldRef<"FuelRecord", 'String'>
   }
     
 
@@ -3319,7 +3332,8 @@ export namespace Prisma {
     odometr: 'odometr',
     total: 'total',
     date: 'date',
-    createdAt: 'createdAt'
+    createdAt: 'createdAt',
+    comment: 'comment'
   };
 
   export type FuelRecordScalarFieldEnum = (typeof FuelRecordScalarFieldEnum)[keyof typeof FuelRecordScalarFieldEnum]
@@ -3511,6 +3525,7 @@ export namespace Prisma {
     total?: FloatFilter<"FuelRecord"> | number
     date?: DateTimeFilter<"FuelRecord"> | Date | string
     createdAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    comment?: StringNullableFilter<"FuelRecord"> | string | null
     driver?: XOR<DriverScalarRelationFilter, DriverWhereInput>
   }
 
@@ -3523,6 +3538,7 @@ export namespace Prisma {
     total?: SortOrder
     date?: SortOrder
     createdAt?: SortOrder
+    comment?: SortOrderInput | SortOrder
     driver?: DriverOrderByWithRelationInput
   }
 
@@ -3538,6 +3554,7 @@ export namespace Prisma {
     total?: FloatFilter<"FuelRecord"> | number
     date?: DateTimeFilter<"FuelRecord"> | Date | string
     createdAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    comment?: StringNullableFilter<"FuelRecord"> | string | null
     driver?: XOR<DriverScalarRelationFilter, DriverWhereInput>
   }, "id">
 
@@ -3550,6 +3567,7 @@ export namespace Prisma {
     total?: SortOrder
     date?: SortOrder
     createdAt?: SortOrder
+    comment?: SortOrderInput | SortOrder
     _count?: FuelRecordCountOrderByAggregateInput
     _avg?: FuelRecordAvgOrderByAggregateInput
     _max?: FuelRecordMaxOrderByAggregateInput
@@ -3569,6 +3587,7 @@ export namespace Prisma {
     total?: FloatWithAggregatesFilter<"FuelRecord"> | number
     date?: DateTimeWithAggregatesFilter<"FuelRecord"> | Date | string
     createdAt?: DateTimeWithAggregatesFilter<"FuelRecord"> | Date | string
+    comment?: StringNullableWithAggregatesFilter<"FuelRecord"> | string | null
   }
 
   export type DriverCreateInput = {
@@ -3656,6 +3675,7 @@ export namespace Prisma {
     total: number
     date?: Date | string
     createdAt?: Date | string
+    comment?: string | null
     driver: DriverCreateNestedOneWithoutFuelRecordsInput
   }
 
@@ -3668,6 +3688,7 @@ export namespace Prisma {
     total: number
     date?: Date | string
     createdAt?: Date | string
+    comment?: string | null
   }
 
   export type FuelRecordUpdateInput = {
@@ -3677,6 +3698,7 @@ export namespace Prisma {
     total?: FloatFieldUpdateOperationsInput | number
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
     driver?: DriverUpdateOneRequiredWithoutFuelRecordsNestedInput
   }
 
@@ -3689,6 +3711,7 @@ export namespace Prisma {
     total?: FloatFieldUpdateOperationsInput | number
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FuelRecordCreateManyInput = {
@@ -3700,6 +3723,7 @@ export namespace Prisma {
     total: number
     date?: Date | string
     createdAt?: Date | string
+    comment?: string | null
   }
 
   export type FuelRecordUpdateManyMutationInput = {
@@ -3709,6 +3733,7 @@ export namespace Prisma {
     total?: FloatFieldUpdateOperationsInput | number
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FuelRecordUncheckedUpdateManyInput = {
@@ -3720,6 +3745,7 @@ export namespace Prisma {
     total?: FloatFieldUpdateOperationsInput | number
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -3992,6 +4018,7 @@ export namespace Prisma {
     total?: SortOrder
     date?: SortOrder
     createdAt?: SortOrder
+    comment?: SortOrder
   }
 
   export type FuelRecordAvgOrderByAggregateInput = {
@@ -4012,6 +4039,7 @@ export namespace Prisma {
     total?: SortOrder
     date?: SortOrder
     createdAt?: SortOrder
+    comment?: SortOrder
   }
 
   export type FuelRecordMinOrderByAggregateInput = {
@@ -4023,6 +4051,7 @@ export namespace Prisma {
     total?: SortOrder
     date?: SortOrder
     createdAt?: SortOrder
+    comment?: SortOrder
   }
 
   export type FuelRecordSumOrderByAggregateInput = {
@@ -4414,6 +4443,7 @@ export namespace Prisma {
     total: number
     date?: Date | string
     createdAt?: Date | string
+    comment?: string | null
   }
 
   export type FuelRecordUncheckedCreateWithoutDriverInput = {
@@ -4424,6 +4454,7 @@ export namespace Prisma {
     total: number
     date?: Date | string
     createdAt?: Date | string
+    comment?: string | null
   }
 
   export type FuelRecordCreateOrConnectWithoutDriverInput = {
@@ -4464,6 +4495,7 @@ export namespace Prisma {
     total?: FloatFilter<"FuelRecord"> | number
     date?: DateTimeFilter<"FuelRecord"> | Date | string
     createdAt?: DateTimeFilter<"FuelRecord"> | Date | string
+    comment?: StringNullableFilter<"FuelRecord"> | string | null
   }
 
   export type DriverCreateWithoutFuelRecordsInput = {
@@ -4532,6 +4564,7 @@ export namespace Prisma {
     total: number
     date?: Date | string
     createdAt?: Date | string
+    comment?: string | null
   }
 
   export type FuelRecordUpdateWithoutDriverInput = {
@@ -4541,6 +4574,7 @@ export namespace Prisma {
     total?: FloatFieldUpdateOperationsInput | number
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FuelRecordUncheckedUpdateWithoutDriverInput = {
@@ -4551,6 +4585,7 @@ export namespace Prisma {
     total?: FloatFieldUpdateOperationsInput | number
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FuelRecordUncheckedUpdateManyWithoutDriverInput = {
@@ -4561,6 +4596,7 @@ export namespace Prisma {
     total?: FloatFieldUpdateOperationsInput | number
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    comment?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
 

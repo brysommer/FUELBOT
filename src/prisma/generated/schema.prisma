@@ -38,4 +38,5 @@ model FuelRecord {
   total     Float // загальна сума за заправку (volume * price)
   date      DateTime @default(now())
   createdAt DateTime @default(now())
+  comment   String? // нове поле для коментаря, необов’язкове
 }
