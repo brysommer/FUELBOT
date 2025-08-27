@@ -175,6 +175,9 @@ bot.on("message", async (msg: Message) => {
   }
 });
 
+
+
+
 export {
   bot,
   loggerBot,

@@ -10,6 +10,30 @@ const delay = (duration: number) => {
 };
 
 const fuelRecord = () => {
+	bot.onText(/\/zapravka/, async (msg) => {  
+
+		const chatId = msg.chat.id;
+	  
+		const driver = await prisma.driver.findUnique({
+		  where: { chatId: BigInt(chatId) }
+		});
+	  
+		if (!driver) {
+			return bot.sendMessage(chatId, "Ви ще не зареєстровані. Будь ласка, спочатку /start.");
+		  }
+
+		  if (driver.step === 0) {
+
+			// Крок 1: обсяг
+			await bot.sendMessage(chatId, "Введіть обсяг заправки (літри):");
+			await prisma.driver.update({
+				where: { id: driver.id },
+				data: { step: 1 }
+			});
+			return;
+		  }
+	});
+
   	bot.on("message", async (msg: Message) => {
     	const chatId = msg.chat.id;
     	const text = msg.text;
