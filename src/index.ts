@@ -52,14 +52,14 @@ const createDriver = async (chatId: number) => {
   return driver;
 }
 
-bot.onText(/\/start/, async (msg) => {
+bot.setMyCommands([
 
-  await bot.setMyCommands([
+  { command: "/start", description: "Старт бота" },
+  { command: "/zapravka", description: "Реєстрація заправки ⛽️" }
 
-    { command: "/start", description: "Старт бота" },
-    { command: "Заправка⛽️", description: "Реєстрація заправки ⛽️" }
+]);
 
-  ]);
+bot.onText(/\/start/, async (msg) => {  
 
   const chatId = msg.chat.id;
 
