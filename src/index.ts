@@ -30,14 +30,7 @@ exportcsv();
 
 
 
-const createDriver = async (chatId: number) => {
-
-  await bot.setMyCommands([
-
-      { command: "/start", description: "Старт бота" },
-      { command: "Заправка⛽️", description: "Реєстрація заправки ⛽️" }
-
-  ]);
+const createDriver = async (chatId: number) => {  
 
   const user = users[chatId];
 
@@ -60,6 +53,14 @@ const createDriver = async (chatId: number) => {
 }
 
 bot.onText(/\/start/, async (msg) => {
+
+  await bot.setMyCommands([
+
+    { command: "/start", description: "Старт бота" },
+    { command: "Заправка⛽️", description: "Реєстрація заправки ⛽️" }
+
+  ]);
+
   const chatId = msg.chat.id;
 
   const driver = await prisma.driver.findUnique({
