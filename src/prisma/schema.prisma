@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated/"
 }
 
 datasource db {
@@ -26,6 +25,31 @@ model Driver {
 
   // Зворотній зв'язок — всі заправки цього водія
   fuelRecords FuelRecord[]
+  fuelNorm    FuelNorm?     // один водій має одну норму
+  shifts      Shift[]
+}
+
+model FuelNorm {
+  id        Int     @id @default(autoincrement())
+  driverId  Int     @unique
+  driver    Driver  @relation(fields: [driverId], references: [id])
+  norm      Float   // л/100км
+  createdAt DateTime @default(now())
+}
+
+model Shift {
+  id             Int       @id @default(autoincrement())
+  driverId       Int
+  driver         Driver    @relation(fields: [driverId], references: [id])
+
+  odometerStart  BigInt
+  odometerEnd    BigInt?
+  distance       Float?    // (odometerEnd - odometerStart)
+  fuelConsumed   Float?    // distance * norm / 100
+  report         String?   // текстовий звіт
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  durationHours  Float?    // (endedAt - startedAt) в годинах
 }
 
 model FuelRecord {

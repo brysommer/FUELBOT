@@ -1,10 +1,11 @@
 import 'dotenv/config';
-import TelegramBot, { Message } from "node-telegram-bot-api";
+import TelegramBot, { Message } from 'node-telegram-bot-api';
 import { prisma } from './lib/prisma';
-import { fuelRecord } from "./fuel-record";
-import { forwardPictures } from "./forward-pictures";
-import { adminBotFunction } from "./admin-bot";
+import { fuelRecord } from './fuel-record';
+import { forwardPictures } from './forward-pictures';
+import { adminBotFunction } from './admin-bot';
 import { exportcsv } from './export-csv';
+import { shiftChain } from './shiftcontroller';
 
 const token = process.env.TELEGRAM_BOT_TOKEN as string;
 const loggertoken = process.env.TELEGRAM_LOGGER_BOT_TOKEN as string;
@@ -15,172 +16,196 @@ const loggerChat = process.env.LOGGER_CHAT as string;
 const adminBot = new TelegramBot(adminToken, { polling: true });
 
 interface UserData {
-  step: number;
-  phone?: string;
-  carNumber?: string;
-  tankVolume?: number;
+    step: number;
+    phone?: string;
+    carNumber?: string;
+    tankVolume?: number;
 }
 
 const users: Record<number, UserData> = {};
 
 fuelRecord();
+shiftChain();
 forwardPictures();
 adminBotFunction();
 exportcsv();
 
+const createDriver = async (chatId: number) => {
+    const user = users[chatId];
 
+    if (!user || !user.phone || !user.carNumber) {
+        throw new Error('Не вистачає даних для створення водія');
+    }
 
-const createDriver = async (chatId: number) => {  
+    const driver = await prisma.driver.create({
+        data: {
+            phone: user.phone,
+            carNumber: user.carNumber,
+            tankVolume: user.tankVolume,
+            chatId,
+            step: 0,
+        },
+    });
 
-  const user = users[chatId];
-
-  if (!user || !user.phone || !user.carNumber) {
-    throw new Error("Не вистачає даних для створення водія");
-  }
-
-  const driver = await prisma.driver.create({
-    data: {
-      phone: user.phone,
-      carNumber: user.carNumber,
-      tankVolume: user.tankVolume,
-      chatId,
-      step: 0
-    },
-  });
-
-  loggerBot.sendMessage(loggerChat, `Водія створено: телефон ` + driver.phone + ` номер авто: ` + driver.carNumber );
-  return driver;
-}
+    loggerBot.sendMessage(
+        loggerChat,
+        `Водія створено: телефон ` + driver.phone + ` номер авто: ` + driver.carNumber,
+    );
+    return driver;
+};
 
 bot.setMyCommands([
-
-  { command: "/start", description: "Старт бота" },
-  { command: "/zapravka", description: "Реєстрація заправки ⛽️" }
-
+    { command: '/start', description: 'Старт бота' },
+    { command: '/zapravka', description: 'Реєстрація заправки ⛽️' },
+    { command: '/zmina', description: 'Керувати змінами 🔃' },
 ]);
 
-bot.onText(/\/start/, async (msg) => {  
+bot.onText(/\/start/, async (msg) => {
+    const chatId = msg.chat.id;
 
-  const chatId = msg.chat.id;
+    const driver = await prisma.driver.findUnique({
+        where: { chatId: BigInt(chatId) },
+    });
 
-  const driver = await prisma.driver.findUnique({
-    where: { chatId: BigInt(chatId) }
-  });
+    const shiftClearing = await prisma.driver.update({
+        where: {
+            id: driver?.id,
+        },
+        data: {
+            step: 0,
+        },
+    });
 
-  if (driver) return bot.sendMessage(chatId, 'Ви вже зареєстровані, можете додавати заправки',
+    if (driver)
+        return bot.sendMessage(
+            chatId,
+            'Додайте заправку чи керуйте змінами',
 
-    {
-      reply_markup: {
-        keyboard: [
-                [{ text: "Заправка⛽️" }]
-              ],
-        one_time_keyboard: false,
-        resize_keyboard: true,
-      },
-    }
+            {
+                reply_markup: {
+                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Зміна 🔃' }]],
+                    one_time_keyboard: false,
+                    resize_keyboard: true,
+                },
+            },
+        );
 
-  )
+    users[chatId] = { step: 1 };
 
-  users[chatId] = { step: 1 };
-
-  bot.sendMessage(chatId, "Привіт! Для початку поділіться своїм номером телефону:", {
-    reply_markup: {
-      keyboard: [
-              [{ text: "Надіслати контакт", request_contact: true }]
-            ],
-      one_time_keyboard: false,
-      resize_keyboard: true,
-    },
-  });
-});
-
-bot.on("contact", async (msg: Message) => {
-  const chatId = msg.chat.id;
-
-  const driver = await prisma.driver.findUnique(
-    {where: { chatId: BigInt(chatId) }} 
-  )
-
-  if (driver) return bot.sendMessage(chatId, 'Ви вже зареєстровані, можете додавати заправки',
-
-    {
-      reply_markup: {
-        keyboard: [
-                [{ text: "Заправка⛽️" }]
-              ],
-        one_time_keyboard: false,
-        resize_keyboard: true,
-      },
-    }
-
- )
-
-  if (!users[chatId]) return;
-
-  users[chatId].phone = msg.contact?.phone_number || "";
-  users[chatId].step = 2;
-
-  bot.sendMessage(chatId, "Дякуємо! Тепер введіть номер вашого авто:");
-});
-
-bot.on("message", async (msg: Message) => {
-  const chatId = msg.chat.id;
-  const text = msg.text;
-
-  if (!users[chatId]) return;
-
-  const user = users[chatId];
-
-  if (user.step === 2 && text) {
-    user.carNumber = text;
-    user.step = 3;
-    bot.sendMessage(chatId, "Чудово! Введіть реальний об’єм вашого бака (в літрах):");
-  } else if (user.step === 3 && text) {
-    const volume = Number(text);
-    if (isNaN(volume)) {
-      bot.sendMessage(chatId, "Будь ласка, введіть число (об’єм бака в літрах).");
-      return;
-    }
-    user.tankVolume = volume;
-    user.step = 4;
-
-    const driver = await createDriver(chatId);
-
-    if (driver) {
-      bot.sendMessage(
-        chatId,
-        `✅ Реєстрацію завершено!\n\n📱 Телефон: ${driver.phone}\n🚘 Авто: ${driver.carNumber}\n⛽ Бак: ${driver.tankVolume} л\n\nТепер ви можете реєструвати ваші заправки.`, {
-          reply_markup: {
-            keyboard: [
-              [{ text: "Заправка⛽️" }]
-            ],
-            resize_keyboard: true,
-            one_time_keyboard: false
-          }
-        }
-      );
-    } else {
-      bot.sendMessage(chatId, 'Не вдалося завершити реєстрацію, спробуйте спочатку або зверніться до адміністратора', {
+    bot.sendMessage(chatId, 'Привіт! Для початку поділіться своїм номером телефону:', {
         reply_markup: {
-          keyboard: [
-            [{ text: "/start" }]
-          ],
-          resize_keyboard: true,
-          one_time_keyboard: true
-        }
-      });
-    }
-    
-
-  }
+            keyboard: [[{ text: 'Надіслати контакт', request_contact: true }]],
+            one_time_keyboard: false,
+            resize_keyboard: true,
+        },
+    });
 });
 
+bot.on('contact', async (msg: Message) => {
+    const chatId = msg.chat.id;
 
+    const driver = await prisma.driver.findUnique({
+        where: { chatId: BigInt(chatId) },
+    });
 
+    if (driver)
+        return bot.sendMessage(
+            chatId,
+            'Ви вже зареєстровані, можете додавати заправки',
 
-export {
-  bot,
-  loggerBot,
-  loggerChat,
-  adminBot
-}
+            {
+                reply_markup: {
+                    keyboard: [[{ text: 'Заправка⛽️' }]],
+                    one_time_keyboard: false,
+                    resize_keyboard: true,
+                },
+            },
+        );
+
+    if (!users[chatId]) return;
+
+    users[chatId].phone = msg.contact?.phone_number || '';
+    users[chatId].step = 2;
+
+    bot.sendMessage(chatId, 'Дякуємо! Тепер введіть номер вашого авто:');
+});
+
+bot.on('message', async (msg: Message) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
+
+    const driver = await prisma.driver.findUnique({
+        where: { chatId: BigInt(chatId) },
+    });
+
+    if (text === 'Головне меню 🏠') {
+        const shiftClearing = await prisma.driver.update({
+            where: {
+                id: driver?.id,
+            },
+            data: {
+                step: 0,
+            },
+        });
+        bot.sendMessage(
+            chatId,
+            'Додайте заправку чи керуйте змінами',
+
+            {
+                reply_markup: {
+                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Зміна 🔃' }]],
+                    one_time_keyboard: false,
+                    resize_keyboard: true,
+                },
+            },
+        );
+    }
+
+    if (!users[chatId]) return;
+
+    const user = users[chatId];
+
+    if (user.step === 2 && text) {
+        user.carNumber = text;
+        user.step = 3;
+        bot.sendMessage(chatId, 'Чудово! Введіть реальний об’єм вашого бака (в літрах):');
+    } else if (user.step === 3 && text) {
+        const volume = Number(text);
+        if (isNaN(volume)) {
+            bot.sendMessage(chatId, 'Будь ласка, введіть число (об’єм бака в літрах).');
+            return;
+        }
+        user.tankVolume = volume;
+        user.step = 4;
+
+        const driver = await createDriver(chatId);
+
+        if (driver) {
+            bot.sendMessage(
+                chatId,
+                `✅ Реєстрацію завершено!\n\n📱 Телефон: ${driver.phone}\n🚘 Авто: ${driver.carNumber}\n⛽ Бак: ${driver.tankVolume} л\n\nТепер ви можете реєструвати ваші заправки.`,
+                {
+                    reply_markup: {
+                        keyboard: [[{ text: 'Заправка⛽️' }]],
+                        resize_keyboard: true,
+                        one_time_keyboard: false,
+                    },
+                },
+            );
+        } else {
+            bot.sendMessage(
+                chatId,
+                'Не вдалося завершити реєстрацію, спробуйте спочатку або зверніться до адміністратора',
+                {
+                    reply_markup: {
+                        keyboard: [[{ text: '/start' }]],
+                        resize_keyboard: true,
+                        one_time_keyboard: true,
+                    },
+                },
+            );
+        }
+    }
+});
+
+export { bot, loggerBot, loggerChat, adminBot };

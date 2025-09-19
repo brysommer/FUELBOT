@@ -1,218 +1,240 @@
-import { Message } from "node-telegram-bot-api";
-import { bot, loggerChat } from ".";
-import { loggerBot } from ".";
-import { prisma } from "./lib/prisma"
+import { Message } from 'node-telegram-bot-api';
+import { bot, loggerChat } from '.';
+import { loggerBot } from '.';
+import { prisma } from './lib/prisma';
 
 const delay = (duration: number) => {
-  return new Promise<void>((resolve) => {
-    setTimeout(resolve, duration);
-  });
+    return new Promise<void>((resolve) => {
+        setTimeout(resolve, duration);
+    });
 };
 
 const fuelRecord = () => {
-	bot.onText(/\/zapravka/, async (msg) => {  
+    bot.onText(/\/zapravka/, async (msg) => {
+        const chatId = msg.chat.id;
 
-		const chatId = msg.chat.id;
-	  
-		const driver = await prisma.driver.findUnique({
-		  where: { chatId: BigInt(chatId) }
-		});
-	  
-		if (!driver) {
-			return bot.sendMessage(chatId, "Ви ще не зареєстровані. Будь ласка, спочатку /start.");
-		  }
+        const driver = await prisma.driver.findUnique({
+            where: { chatId: BigInt(chatId) },
+        });
 
-		  if (driver.step === 0) {
+        if (!driver) {
+            return bot.sendMessage(chatId, 'Ви ще не зареєстровані. Будь ласка, спочатку /start.');
+        }
 
-			// Крок 1: обсяг
-			await bot.sendMessage(chatId, "Введіть обсяг заправки (літри):");
-			await prisma.driver.update({
-				where: { id: driver.id },
-				data: { step: 1 }
-			});
-			return;
-		  }
-	});
+        if (driver.step === 0) {
+            // Крок 1: обсяг
+            await bot.sendMessage(chatId, 'Введіть обсяг заправки (літри):');
+            await prisma.driver.update({
+                where: { id: driver.id },
+                data: { step: 1 },
+            });
+            return;
+        }
+    });
 
-  	bot.on("message", async (msg: Message) => {
-    	const chatId = msg.chat.id;
-    	const text = msg.text;
+    bot.on('message', async (msg: Message) => {
+        const chatId = msg.chat.id;
+        const text = msg.text;
 
-    	const driver = await prisma.driver.findUnique({
-      		where: { chatId: BigInt(chatId) }
-   		});
+        const driver = await prisma.driver.findUnique({
+            where: { chatId: BigInt(chatId) },
+        });
 
-    	if (text === "Заправка⛽️") {
+        if (text === 'Заправка⛽️') {
+            if (!driver) {
+                return bot.sendMessage(
+                    chatId,
+                    'Ви ще не зареєстровані. Будь ласка, спочатку /start.',
+                );
+            }
 
-      		if (!driver) {
-        		return bot.sendMessage(chatId, "Ви ще не зареєстровані. Будь ласка, спочатку /start.");
-      		}
+            if (driver.step === 0) {
+                // Крок 1: обсяг
+                await bot.sendMessage(chatId, 'Введіть обсяг заправки (літри):', {
+                    reply_markup: {
+                        keyboard: [[{ text: 'Головне меню 🏠' }]],
+                        one_time_keyboard: false,
+                        resize_keyboard: true,
+                    },
+                });
+                await prisma.driver.update({
+                    where: { id: driver.id },
+                    data: { step: 1 },
+                });
+                return;
+            }
+        }
 
-      		if (driver.step === 0) {
+        // === КРОК 1: ОБСЯГ ===
+        if (driver?.step === 1 && text) {
+            const volume = parseFloat(text);
 
-				// Крок 1: обсяг
-				await bot.sendMessage(chatId, "Введіть обсяг заправки (літри):");
-				await prisma.driver.update({
-					where: { id: driver.id },
-					data: { step: 1 }
-				});
-				return;
-      		}
-    	}
+            if (isNaN(volume)) {
+                return bot.sendMessage(chatId, 'Будь ласка, введіть число (літри).', {
+                    reply_markup: {
+                        keyboard: [[{ text: 'Головне меню 🏠' }]],
+                        one_time_keyboard: false,
+                        resize_keyboard: true,
+                    },
+                });
+            }
 
-		// === КРОК 1: ОБСЯГ ===
-		if (driver?.step === 1 && text) {
+            // тимчасовий запис
+            await prisma.fuelRecord.create({
+                data: {
+                    driverId: driver.id,
+                    volume,
+                    price: 0,
+                    total: 0,
+                },
+            });
 
-			const volume = parseFloat(text);
+            await prisma.driver.update({
+                where: { id: driver.id },
+                data: { step: 2 },
+            });
 
-			if (isNaN(volume)) {
-				return bot.sendMessage(chatId, "Будь ласка, введіть число (літри).");
-			}
+            await bot.sendMessage(chatId, 'Введіть ціну за літр:');
+            return;
+        }
 
-			// тимчасовий запис
-			await prisma.fuelRecord.create({
-				data: {
-					driverId: driver.id,
-					volume,
-					price: 0,
-					total: 0,
-				}
-			});
+        // === КРОК 2: ЦІНА ===
+        if (driver?.step === 2 && text) {
+            const price = parseFloat(text);
+            if (isNaN(price)) {
+                return bot.sendMessage(chatId, 'Будь ласка, введіть число (грн/л).', {
+                    reply_markup: {
+                        keyboard: [[{ text: 'Головне меню 🏠' }]],
+                        one_time_keyboard: false,
+                        resize_keyboard: true,
+                    },
+                });
+            }
 
-			await prisma.driver.update({
-				where: { id: driver.id },
-				data: { step: 2 }
-			});
+            const record = await prisma.fuelRecord.findFirst({
+                where: { driverId: driver.id, price: 0 },
+                orderBy: { createdAt: 'desc' },
+            });
 
-			await bot.sendMessage(chatId, "Введіть ціну за літр:");
-			return;
-		}
+            if (!record) {
+                return bot.sendMessage(chatId, 'Сталася помилка. Спробуйте ще раз.');
+            }
 
-		// === КРОК 2: ЦІНА ===
-		if (driver?.step === 2 && text) {
-			const price = parseFloat(text);
-			if (isNaN(price)) {
-				return bot.sendMessage(chatId, "Будь ласка, введіть число (грн/л).");
-			}
+            const total = record.volume * price;
 
-			const record = await prisma.fuelRecord.findFirst({
-				where: { driverId: driver.id, price: 0 },
-				orderBy: { createdAt: "desc" }
-			});
+            await prisma.fuelRecord.update({
+                where: { id: record.id },
+                data: { price, total },
+            });
 
-			if (!record) {
-				return bot.sendMessage(chatId, "Сталася помилка. Спробуйте ще раз.");
-			}
+            await prisma.driver.update({
+                where: { id: driver.id },
+                data: { step: 3 }, // новий крок
+            });
 
-			const total = record.volume * price;
+            await bot.sendMessage(chatId, 'Додайте показник одометра (км):');
+            return;
+        }
 
-			await prisma.fuelRecord.update({
-				where: { id: record.id },
-				data: { price, total }
-			});
+        // === КРОК 3: ОДОМЕТР ===
+        if (driver?.step === 3 && text) {
+            const odometr = parseInt(text);
 
-			await prisma.driver.update({
-				where: { id: driver.id },
-				data: { step: 3 } // новий крок
-			});
+            if (isNaN(odometr)) {
+                return bot.sendMessage(chatId, 'Будь ласка, введіть число (одометр).', {
+                    reply_markup: {
+                        keyboard: [[{ text: 'Головне меню 🏠' }]],
+                        one_time_keyboard: false,
+                        resize_keyboard: true,
+                    },
+                });
+            }
 
-			await bot.sendMessage(chatId, "Додайте показник одометра (км):");
-			return;
-		};
+            const record = await prisma.fuelRecord.findFirst({
+                where: { driverId: driver.id, odometr: null },
+                orderBy: { createdAt: 'desc' },
+            });
 
-		// === КРОК 3: ОДОМЕТР ===
-		if (driver?.step === 3 && text) {
+            if (!record) {
+                return bot.sendMessage(chatId, 'Сталася помилка. Спробуйте ще раз.');
+            }
 
-			const odometr = parseInt(text);
-			
-			if (isNaN(odometr)) {
-				return bot.sendMessage(chatId, "Будь ласка, введіть число (одометр).");
-			}
+            const updated = await prisma.fuelRecord.update({
+                where: { id: record.id },
+                data: { odometr },
+            });
 
-			const record = await prisma.fuelRecord.findFirst({
-				where: { driverId: driver.id, odometr: null },
-				orderBy: { createdAt: "desc" }
-			});
+            await prisma.driver.update({
+                where: { id: driver.id },
+                data: { step: 4 },
+            });
 
-			if (!record) {
-				return bot.sendMessage(chatId, "Сталася помилка. Спробуйте ще раз.");
-			}
+            await bot.sendMessage(chatId, 'Введіть коментар до заправки', {
+                reply_markup: {
+                    keyboard: [[{ text: 'Головне меню 🏠' }]],
+                    one_time_keyboard: false,
+                    resize_keyboard: true,
+                },
+            });
+            return;
+        }
 
-			const updated = await prisma.fuelRecord.update({
-				where: { id: record.id },
-				data: { odometr }
-			});
+        // === КРОК 4: КОМЕНТАР ===
+        if (driver?.step === 4 && text) {
+            const record = await prisma.fuelRecord.findFirst({
+                where: { driverId: driver.id, comment: null },
+                orderBy: { createdAt: 'desc' },
+            });
 
-			await prisma.driver.update({
-				where: { id: driver.id },
-				data: { step: 4 }
-			});
+            if (!record) {
+                return bot.sendMessage(chatId, 'Сталася помилка. Спробуйте ще раз.');
+            }
 
-			await bot.sendMessage(chatId, "Введіть коментар до заправки");
-			return;
+            const updated = await prisma.fuelRecord.update({
+                where: { id: record.id },
+                data: { comment: text },
+            });
 
-		};
+            await prisma.driver.update({
+                where: { id: driver.id },
+                data: { step: 0 }, // Завершуємо процес
+            });
 
-			// === КРОК 4: КОМЕНТАР ===
-		if (driver?.step === 4 && text) {
-
-			const record = await prisma.fuelRecord.findFirst({
-				where: { driverId: driver.id, comment: null },
-				orderBy: { createdAt: "desc" }
-			});
-
-			if (!record) {
-				return bot.sendMessage(chatId, "Сталася помилка. Спробуйте ще раз.");
-			}
-
-			const updated = await prisma.fuelRecord.update({
-				where: { id: record.id },
-				data: { comment: text }
-			});
-
-			await prisma.driver.update({
-				where: { id: driver.id },
-				data: { step: 0 } // Завершуємо процес
-			});
-
-  			bot.sendMessage(chatId, 
-    `✅ Заправка зареєстрована!  
+            bot.sendMessage(
+                chatId,
+                `✅ Заправка зареєстрована!  
 🛢️ ${updated.volume} л по ${updated.price} грн/л  
 📍 Одометр: ${updated.odometr} км  
 💸 Сума: ${updated.total} грн
-💬 Коментар: ${updated.comment ?? "немає"}
-`
-);
-			await delay(1000);
-    
-    		loggerBot.sendMessage(loggerChat,
-`⛽️ Нова заправка!  
+💬 Коментар: ${updated.comment ?? 'немає'}
+`,
+            );
+            await delay(1000);
+
+            loggerBot.sendMessage(
+                loggerChat,
+                `⛽️ Нова заправка!  
 🚗 Авто: ${driver.carNumber}  
 🛢️ ${updated.volume} л по 💵 ${updated.price} грн/л  
 📍 Одометр: ${updated.odometr} км  
 💸 Загальна сума: ${updated.total} грн
-💬 Коментар: ${updated.comment ?? "немає"}
-`
-);
-          
-    		return bot.sendMessage(chatId, 'Фото одометру та чеку можна переслати після внесення данних',
-				{
-					reply_markup: {
-						keyboard: [[{ text: "Заправка⛽️" }]],
-						resize_keyboard: true,
-						one_time_keyboard: false
-					}
-				}
-			);
-		}
-	});   
+💬 Коментар: ${updated.comment ?? 'немає'}
+`,
+            );
+
+            return bot.sendMessage(
+                chatId,
+                'Фото одометру та чеку можна переслати після внесення данних',
+                {
+                    reply_markup: {
+                        keyboard: [[{ text: 'Заправка⛽️' }]],
+                        resize_keyboard: true,
+                        one_time_keyboard: false,
+                    },
+                },
+            );
+        }
+    });
 };
 
-export { 
-
-    fuelRecord
-
-};
-
-
-
+export { fuelRecord };
