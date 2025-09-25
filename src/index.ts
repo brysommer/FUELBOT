@@ -55,9 +55,9 @@ const createDriver = async (chatId: number) => {
 };
 
 bot.setMyCommands([
-    { command: '/start', description: 'Старт бота' },
-    { command: '/zapravka', description: 'Реєстрація заправки ⛽️' },
-    { command: '/zmina', description: 'Керувати змінами 🔃' },
+    { command: '/start', description: 'Старт' },
+    { command: '/zapravka', description: 'Заправка' },
+    { command: '/pochatok', description: 'Початок дня' },
 ]);
 
 bot.onText(/\/start/, async (msg) => {
@@ -79,11 +79,11 @@ bot.onText(/\/start/, async (msg) => {
     if (driver)
         return bot.sendMessage(
             chatId,
-            'Додайте заправку чи керуйте змінами',
+            'Головне меню',
 
             {
                 reply_markup: {
-                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Зміна 🔃' }]],
+                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
                     one_time_keyboard: false,
                     resize_keyboard: true,
                 },
@@ -149,11 +149,11 @@ bot.on('message', async (msg: Message) => {
         });
         bot.sendMessage(
             chatId,
-            'Додайте заправку чи керуйте змінами',
+            'Головне меню',
 
             {
                 reply_markup: {
-                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Зміна 🔃' }]],
+                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
                     one_time_keyboard: false,
                     resize_keyboard: true,
                 },

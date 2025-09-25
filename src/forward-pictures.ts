@@ -22,7 +22,7 @@ const forwardPictures = () => {
 
             await bot.sendMessage(chatId, 'Фото успішно переслано адміністратору', {
                 reply_markup: {
-                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Зміна 🔃' }]],
+                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
                     one_time_keyboard: false,
                     resize_keyboard: true,
                 },

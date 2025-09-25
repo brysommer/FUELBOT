@@ -4,12 +4,12 @@ import { format } from 'date-fns';
 import { delay, formattedDateUA } from '../helpers';
 
 export const shiftChain = () => {
-    bot.onText(/\/zmina/, async (msg) => {
+    bot.onText(/\/pochatok/, async (msg) => {
         const chatId = msg.chat.id;
 
         bot.sendMessage(
             chatId,
-            'Бажаєте розпочати зміну?',
+            'Робочий день ⏳',
 
             {
                 reply_markup: {
@@ -30,6 +30,8 @@ export const shiftChain = () => {
 
         console.log(driver);
 
+        if (text === 'Головне меню 🏠') return false;
+
         if (driver) {
             //comment
             if (driver.step === 1989) {
@@ -45,7 +47,7 @@ export const shiftChain = () => {
 
                     bot.sendMessage(chatId, `Коментар не прийнято. Повертаю до головного меню`, {
                         reply_markup: {
-                            keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Зміна 🔃' }]],
+                            keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
                             one_time_keyboard: false,
                             resize_keyboard: true,
                         },
@@ -66,7 +68,7 @@ export const shiftChain = () => {
                         `Усі ваші зміни вже містять коментар. Повертаю до головного меню`,
                         {
                             reply_markup: {
-                                keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Зміна 🔃' }]],
+                                keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
                                 one_time_keyboard: false,
                                 resize_keyboard: true,
                             },
@@ -91,17 +93,29 @@ export const shiftChain = () => {
                             step: 0,
                         },
                     });
-                    bot.sendMessage(chatId, `Коментар "${text}" прийнято. Гарного відпочинку`, {
+                    bot.sendMessage(chatId, `Коментар "${text}" прийнято.`, {
                         reply_markup: {
-                            keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Зміна 🔃' }]],
+                            keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
                             one_time_keyboard: false,
                             resize_keyboard: true,
                         },
                     });
+                    await delay(1000);
+                    bot.sendMessage(
+                        chatId,
+                        `Перешліть фото одометра. Натисніть на іконку "скріпка", оберіть зображення з галереї і відправте в діалог з ботом. Фото буде переслано адміністратору.`,
+                        {
+                            reply_markup: {
+                                keyboard: [[{ text: 'Головне меню 🏠' }]],
+                                one_time_keyboard: false,
+                                resize_keyboard: true,
+                            },
+                        },
+                    );
                 } else {
-                    bot.sendMessage(chatId, `Коментар не було додано. Хверніться джо адміна`, {
+                    bot.sendMessage(chatId, `Коментар не було додано. Зверніться до адміна`, {
                         reply_markup: {
-                            keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Зміна 🔃' }]],
+                            keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
                             one_time_keyboard: false,
                             resize_keyboard: true,
                         },
@@ -130,16 +144,20 @@ export const shiftChain = () => {
                         },
                     });
 
-                    bot.sendMessage(chatId, `Зміну розпочато, перешліть фото одометра`, {
-                        reply_markup: {
-                            keyboard: [
-                                [{ text: 'Завершити зміну 🏁' }, { text: 'Заправка⛽️' }],
-                                [{ text: 'Головне меню 🏠' }],
-                            ],
-                            one_time_keyboard: false,
-                            resize_keyboard: true,
+                    bot.sendMessage(
+                        chatId,
+                        `Робочий день розпочато, перешліть фото одометра. Натисніть на іконку "скріпка", оберіть зображення з галереї і відправте в діалог з ботом. Фото буде переслано адміністратору.`,
+                        {
+                            reply_markup: {
+                                keyboard: [
+                                    [{ text: 'Кінець дня 🏁' }, { text: 'Заправка⛽️' }],
+                                    [{ text: 'Головне меню 🏠' }],
+                                ],
+                                one_time_keyboard: true,
+                                resize_keyboard: true,
+                            },
                         },
-                    });
+                    );
                 } catch (error) {
                     bot.sendMessage(
                         chatId,
@@ -293,7 +311,7 @@ export const shiftChain = () => {
                     );
                 }
             }
-            if (text === 'Зміна 🔃') {
+            if (text === 'Робочий день ⏳') {
                 const startOfDay = new Date();
                 startOfDay.setHours(0, 0, 0, 0);
 
@@ -318,14 +336,14 @@ export const shiftChain = () => {
                 if (shift && !shift.endedAt) {
                     bot.sendMessage(
                         chatId,
-                        `Зміну розпочато о ${formattedDateUA(shift.startedAt)}. На початок зміни ${
-                            shift.odometerStart
-                        }`,
+                        `Робочий день розпочато о ${formattedDateUA(
+                            shift.startedAt,
+                        )}. На початок зміни ${shift.odometerStart}`,
 
                         {
                             reply_markup: {
                                 keyboard: [
-                                    [{ text: 'Завершити зміну 🏁' }, { text: 'Головне меню 🏠' }],
+                                    [{ text: 'Кінець дня 🏁' }, { text: 'Головне меню 🏠' }],
                                 ],
                                 one_time_keyboard: false,
                                 resize_keyboard: true,
@@ -335,12 +353,12 @@ export const shiftChain = () => {
                 } else {
                     bot.sendMessage(
                         chatId,
-                        'Бажаєте розпочати зміну?',
+                        'Робочий день ⏳',
 
                         {
                             reply_markup: {
                                 keyboard: [
-                                    [{ text: 'Розпочати зміну ⏱️' }, { text: 'Головне меню 🏠' }],
+                                    [{ text: 'Початок дня ⏱️' }, { text: 'Головне меню 🏠' }],
                                 ],
                                 one_time_keyboard: false,
                                 resize_keyboard: true,
@@ -350,7 +368,7 @@ export const shiftChain = () => {
                 }
             }
 
-            if (text === 'Розпочати зміну ⏱️') {
+            if (text === 'Початок дня ⏱️') {
                 const odometrStep = await prisma.driver.update({
                     where: {
                         id: driver.id,
@@ -375,7 +393,7 @@ export const shiftChain = () => {
                 );
             }
 
-            if (text === 'Завершити зміну 🏁') {
+            if (text === 'Кінець дня 🏁') {
                 const endShiftOdo = await prisma.driver.update({
                     where: {
                         id: driver.id,
@@ -389,7 +407,7 @@ export const shiftChain = () => {
         } else {
             bot.sendMessage(chatId, 'Водія не знайдено.', {
                 reply_markup: {
-                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Зміна 🔃' }]],
+                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
                     one_time_keyboard: false,
                     resize_keyboard: true,
                 },
