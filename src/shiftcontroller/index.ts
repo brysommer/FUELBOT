@@ -4,21 +4,74 @@ import { format } from 'date-fns';
 import { delay, formattedDateUA } from '../helpers';
 
 export const shiftChain = () => {
-    bot.onText(/\/pochatok/, async (msg) => {
+    bot.onText(/\/den/, async (msg) => {
         const chatId = msg.chat.id;
+        const text = msg.text;
 
-        bot.sendMessage(
-            chatId,
-            'Робочий день ⏳',
+        const driver = await prisma.driver.findUnique({
+            where: { chatId: BigInt(chatId) },
+        });
 
-            {
-                reply_markup: {
-                    keyboard: [[{ text: 'Розпочати зміну ⏱️' }, { text: 'Головне меню 🏠' }]],
-                    one_time_keyboard: false,
-                    resize_keyboard: true,
+        if (driver) {
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const endOfDay = new Date();
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const shift = await prisma.shift.findFirst({
+                where: {
+                    driverId: driver.id,
+                    startedAt: {
+                        gte: startOfDay,
+                        lte: endOfDay,
+                    },
                 },
-            },
-        );
+                orderBy: {
+                    startedAt: 'desc', // бере останню за часом
+                },
+            });
+
+            if (shift && !shift.endedAt) {
+                bot.sendMessage(
+                    chatId,
+                    `Робочий день розпочато о ${formattedDateUA(
+                        shift.startedAt,
+                    )}. На початок зміни ${shift.odometerStart}`,
+
+                    {
+                        reply_markup: {
+                            keyboard: [[{ text: 'Кінець дня 🏁' }, { text: 'Головне меню 🏠' }]],
+                            one_time_keyboard: false,
+                            resize_keyboard: true,
+                        },
+                    },
+                );
+            } else {
+                const odometrStep = await prisma.driver.update({
+                    where: {
+                        id: driver.id,
+                    },
+                    data: {
+                        step: 1991,
+                    },
+                });
+
+                console.log(odometrStep);
+                bot.sendMessage(
+                    chatId,
+                    `Введіть актуальний показник одометра.`,
+
+                    {
+                        reply_markup: {
+                            keyboard: [[{ text: 'Головне меню 🏠' }]],
+                            one_time_keyboard: false,
+                            resize_keyboard: true,
+                        },
+                    },
+                );
+            }
+        }
     });
     bot.on('text', async (msg) => {
         const chatId = msg.chat.id;
@@ -351,15 +404,23 @@ export const shiftChain = () => {
                         },
                     );
                 } else {
+                    const odometrStep = await prisma.driver.update({
+                        where: {
+                            id: driver.id,
+                        },
+                        data: {
+                            step: 1991,
+                        },
+                    });
+
+                    console.log(odometrStep);
                     bot.sendMessage(
                         chatId,
-                        'Робочий день ⏳',
+                        `Введіть актуальний показник одометра.`,
 
                         {
                             reply_markup: {
-                                keyboard: [
-                                    [{ text: 'Початок дня ⏱️' }, { text: 'Головне меню 🏠' }],
-                                ],
+                                keyboard: [[{ text: 'Головне меню 🏠' }]],
                                 one_time_keyboard: false,
                                 resize_keyboard: true,
                             },
@@ -367,7 +428,7 @@ export const shiftChain = () => {
                     );
                 }
             }
-
+            //deprecated
             if (text === 'Початок дня ⏱️') {
                 const odometrStep = await prisma.driver.update({
                     where: {

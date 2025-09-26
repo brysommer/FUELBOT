@@ -54,11 +54,15 @@ const createDriver = async (chatId: number) => {
     return driver;
 };
 
-bot.setMyCommands([
+const commands = [
     { command: '/start', description: 'Старт' },
     { command: '/zapravka', description: 'Заправка' },
-    { command: '/pochatok', description: 'Початок дня' },
-]);
+    { command: '/den', description: 'Робочий день' },
+];
+
+bot.setMyCommands(commands)
+    .then(() => console.log('Команди оновлено'))
+    .catch(console.error);
 
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
