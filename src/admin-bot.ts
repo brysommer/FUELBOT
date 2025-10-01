@@ -98,6 +98,16 @@ const adminBotFunction = () => {
                 orderBy: { date: 'asc' },
             });
 
+            const days = await prisma.shift.findMany({
+                where: {
+                    driverId,
+                    ...(fromDate ? { startedAt: { gte: fromDate } } : {}),
+                },
+                orderBy: { startedAt: 'asc' },
+            });
+
+            const totalDistance = days.reduce((sum, d) => sum + (d.distance ?? 0), 0);
+
             if (!records.length) {
                 await adminBot.sendMessage(chatId, '🚫 Немає даних за цей період.');
                 return;
@@ -122,11 +132,8 @@ const adminBotFunction = () => {
                 })  
 
 🚗 Авто: ${driver?.carNumber}
-🛢️ Витрачено палива: ${liters.toFixed(2)} л  
-💸 Витрати: ${cost.toFixed(2)} грн  
-📏 Пробіг: ${distance} км  
-⚡️ Витрати на 1 км: ${costPerKm.toFixed(2)} грн/км  
-⛽️ Середня витрата: ${consumption.toFixed(2)} л/100 км
+🛢️ Заправлено: ${liters.toFixed(2)} л  
+📏 Пробіг: ${totalDistance} км  
 `,
                 {
                     reply_markup: {

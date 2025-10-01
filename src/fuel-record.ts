@@ -168,47 +168,15 @@ const fuelRecord = () => {
 
             await prisma.driver.update({
                 where: { id: driver.id },
-                data: { step: 4 },
+                data: { step: 0 },
             });
 
-            await bot.sendMessage(chatId, 'Введіть коментар до заправки', {
-                reply_markup: {
-                    keyboard: [[{ text: 'Головне меню 🏠' }]],
-                    one_time_keyboard: false,
-                    resize_keyboard: true,
-                },
-            });
-            return;
-        }
-
-        // === КРОК 4: КОМЕНТАР ===
-        if (driver?.step === 4 && text) {
-            const record = await prisma.fuelRecord.findFirst({
-                where: { driverId: driver.id, comment: null },
-                orderBy: { createdAt: 'desc' },
-            });
-
-            if (!record) {
-                return bot.sendMessage(chatId, 'Сталася помилка. Спробуйте ще раз.');
-            }
-
-            const updated = await prisma.fuelRecord.update({
-                where: { id: record.id },
-                data: { comment: text },
-            });
-
-            await prisma.driver.update({
-                where: { id: driver.id },
-                data: { step: 0 }, // Завершуємо процес
-            });
-
-            bot.sendMessage(
+            await bot.sendMessage(
                 chatId,
                 `✅ Заправка зареєстрована!  
 🛢️ ${updated.volume} л по ${updated.price} грн/л  
 📍 Одометр: ${updated.odometr} км  
 💸 Сума: ${updated.total} грн
-💬 Коментар: ${updated.comment ?? 'немає'}
 `,
             );
             await delay(1000);

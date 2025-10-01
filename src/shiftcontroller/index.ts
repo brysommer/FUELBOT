@@ -35,9 +35,9 @@ export const shiftChain = () => {
             if (shift && !shift.endedAt) {
                 bot.sendMessage(
                     chatId,
-                    `Робочий день розпочато о ${formattedDateUA(
-                        shift.startedAt,
-                    )}. На початок зміни ${shift.odometerStart}`,
+                    `Робочий день розпочато о ${formattedDateUA(shift.startedAt)}. На початок дня ${
+                        shift.odometerStart
+                    }`,
 
                     {
                         reply_markup: {
@@ -118,7 +118,7 @@ export const shiftChain = () => {
                 if (!recentShift) {
                     bot.sendMessage(
                         chatId,
-                        `Усі ваші зміни вже містять коментар. Повертаю до головного меню`,
+                        `Усі ваші дні вже містять коментар. Повертаю до головного меню`,
                         {
                             reply_markup: {
                                 keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
@@ -326,10 +326,10 @@ export const shiftChain = () => {
 
                                 await bot.sendMessage(
                                     chatId,
-                                    `Введіть підсумковий коментар зміни одним повідомленням`,
+                                    `Введіть підсумковий коментар дня одним повідомленням`,
                                 );
                             } else {
-                                bot.sendMessage(chatId, 'Відсутні активні зміни', {
+                                bot.sendMessage(chatId, 'Відсутні активні дні', {
                                     reply_markup: {
                                         keyboard: [[{ text: 'Головне меню 🏠' }]],
                                         one_time_keyboard: false,
@@ -391,7 +391,7 @@ export const shiftChain = () => {
                         chatId,
                         `Робочий день розпочато о ${formattedDateUA(
                             shift.startedAt,
-                        )}. На початок зміни ${shift.odometerStart}`,
+                        )}. На початок дня ${shift.odometerStart}`,
 
                         {
                             reply_markup: {
