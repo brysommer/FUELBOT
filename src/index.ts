@@ -71,16 +71,16 @@ bot.onText(/\/start/, async (msg) => {
         where: { chatId: BigInt(chatId) },
     });
 
-    const shiftClearing = await prisma.driver.update({
-        where: {
-            id: driver?.id,
-        },
-        data: {
-            step: 0,
-        },
-    });
+    if (driver) {
+        const shiftClearing = await prisma.driver.update({
+            where: {
+                id: driver?.id,
+            },
+            data: {
+                step: 0,
+            },
+        });
 
-    if (driver)
         return bot.sendMessage(
             chatId,
             'Головне меню',
@@ -93,7 +93,7 @@ bot.onText(/\/start/, async (msg) => {
                 },
             },
         );
-
+    }
     users[chatId] = { step: 1 };
 
     bot.sendMessage(chatId, 'Привіт! Для початку поділіться своїм номером телефону:', {
@@ -190,9 +190,9 @@ bot.on('message', async (msg: Message) => {
                 `✅ Реєстрацію завершено!\n\n📱 Телефон: ${driver.phone}\n🚘 Авто: ${driver.carNumber}\n⛽ Бак: ${driver.tankVolume} л\n\nТепер ви можете реєструвати ваші заправки.`,
                 {
                     reply_markup: {
-                        keyboard: [[{ text: 'Заправка⛽️' }]],
-                        resize_keyboard: true,
+                        keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
                         one_time_keyboard: false,
+                        resize_keyboard: true,
                     },
                 },
             );

@@ -466,13 +466,7 @@ export const shiftChain = () => {
                 bot.sendMessage(chatId, 'Введіть показник одометра');
             }
         } else {
-            bot.sendMessage(chatId, 'Водія не знайдено.', {
-                reply_markup: {
-                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
-                    one_time_keyboard: false,
-                    resize_keyboard: true,
-                },
-            });
+            //водія не знайдено
         }
     });
 };
