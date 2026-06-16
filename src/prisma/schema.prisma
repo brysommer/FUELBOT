@@ -13,55 +13,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Driver {
-  id         Int          @id @default(autoincrement())
-  firstName  String?
-  phone      String       @unique
-  carNumber  String       @unique
-  tankVolume Int?
-  chatId     BigInt       @unique
-  step       Int
-  createdAt  DateTime     @default(now())
+// 1. Таблиця пошукових запитів та лімітів ціни
+model SearchConfig {
+  id           Int      @id @default(autoincrement())
+  query        String   // Наприклад: "iPhone 17 Pro", "iPhone 17 Pro Max"
+  minPrice     Float    // Поріг знизу, щоб відсікти чохли/коробки (наприклад, 400)
+  maxPrice     Float    // Максимальний поріг Buy It Now (наприклад, 850)
+  currency     String   @default("EUR")
+  isActive     Boolean  @default(true)
+  comment      String?  // Нотатка для себе (наприклад: "Шукаю під замовлення")
 
-  // Зворотній зв'язок — всі заправки цього водія
-  fuelRecords FuelRecord[]
-  fuelNorm    FuelNorm?     // один водій має одну норму
-  shifts      Shift[]
+  @@map("search_configs")
 }
 
-model FuelNorm {
-  id        Int     @id @default(autoincrement())
-  driverId  Int     @unique
-  driver    Driver  @relation(fields: [driverId], references: [id])
-  norm      Float   // л/100км
-  createdAt DateTime @default(now())
-}
-
-model Shift {
-  id             Int       @id @default(autoincrement())
-  driverId       Int
-  driver         Driver    @relation(fields: [driverId], references: [id])
-
-  odometerStart  BigInt
-  odometerEnd    BigInt?
-  distance       Float?    // (odometerEnd - odometerStart)
-  fuelConsumed   Float?    // distance * norm / 100
-  report         String?   // текстовий звіт
-  startedAt      DateTime  @default(now())
-  endedAt        DateTime?
-  durationHours  Float?    // (endedAt - startedAt) в годинах
-}
-
-model FuelRecord {
-  id          Int      @id @default(autoincrement())
-  driverId    Int
-  driver      Driver   @relation(fields: [driverId], references: [id])
-  volume      Float    // обсяг заправки в літрах
-  price       Float    // ціна за літр
-  odometr     BigInt?  // одометр
-  total       Float    // загальна сума за заправку (volume * price)
-  date        DateTime @default(now())
+// 2. Таблиця для дедуплікації (щоб лоти не присилалися повторно)
+model TrackedItem {
+  id          String   @id // eBay itemId (String, бо в eBay це довгі числові ID, які можуть вийти за межі стандартного Integer)
+  title       String
+  price       Float
+  currency    String
+  url         String
+  marketplace String   // Наприклад: EBAY_DE, EBAY_PL
   createdAt   DateTime @default(now())
-  comment     String?  // нове поле для коментаря, необов’язкове
+
+  @@map("tracked_items")
 }
 
+// 3. Глобальні налаштування системи (щоб міняти розклад роботи без передеплою)
+model AppConfig {
+  key         String   @id // Наприклад: "WORK_START_HOUR", "WORK_END_HOUR"
+  value       String   // Наприклад: "9", "23"
+  description String?
+
+  @@map("app_configs")
+}

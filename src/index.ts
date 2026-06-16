@@ -1,19 +1,17 @@
 import 'dotenv/config';
-import TelegramBot, { Message } from 'node-telegram-bot-api';
 import { prisma } from './lib/prisma';
-import { fuelRecord } from './fuel-record';
-import { forwardPictures } from './forward-pictures';
-import { adminBotFunction } from './admin-bot';
-import { exportcsv } from './export-csv';
-import { shiftChain } from './shiftcontroller';
+import axios from 'axios';
+import { sendTelegramAlert } from './sendTGalert';
+import { getEbayAppToken } from './getEbayToken';
+import { getValidToken } from './tokenrefresh';
 
-const token = process.env.TELEGRAM_BOT_TOKEN as string;
-const loggertoken = process.env.TELEGRAM_LOGGER_BOT_TOKEN as string;
-const adminToken = process.env.ADMIN_BOT_BOT as string;
-const bot = new TelegramBot(token, { polling: true });
-const loggerBot = new TelegramBot(loggertoken, { polling: true });
-const loggerChat = process.env.LOGGER_CHAT as string;
-const adminBot = new TelegramBot(adminToken, { polling: true });
+const MARKETPLACES = [
+    'EBAY_DE', // Німеччина
+    'EBAY_FR', // Франція
+    'EBAY_IT', // Італія
+    'EBAY_ES', // Іспанія
+    'EBAY_PL', // Польща
+];
 
 interface UserData {
     step: number;
@@ -22,194 +20,108 @@ interface UserData {
     tankVolume?: number;
 }
 
-const users: Record<number, UserData> = {};
+const checkLotsForConfig = async (config: any, marketplaceId: string, token: string) => {
+    try {
+        const response = await axios.get('https://api.ebay.com/buy/browse/v1/item_summary/search', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'X-EBAY-C-MARKETPLACE-ID': marketplaceId,
+                'Cache-Control': 'no-cache',
+            },
+            params: {
+                q: config.query,
+                limit: 10, // Нам потрібні тільки найсвіжіші топ-10
+                sort: 'newlyListed',
+                // Динамічний фільтр з нашої бази даних
+                filter: `price:[${config.minPrice}..${config.maxPrice}],priceCurrency:${config.currency},buyingOptions:{FIXED_PRICE}`,
+            },
+        });
 
-fuelRecord();
-shiftChain();
-forwardPictures();
-adminBotFunction();
-exportcsv();
+        const rawItems = response.data.itemSummaries || [];
 
-const createDriver = async (chatId: number) => {
-    const user = users[chatId];
+        // 2. Одразу відфільтровуємо: залишаємо ЛИШЕ ті, де маркетплейс створення НЕ 'EBAY_US'
+        const items = rawItems.filter((item: any) => item.listingMarketplaceId !== 'EBAY_US');
 
-    if (!user || !user.phone || !user.carNumber) {
-        throw new Error('Не вистачає даних для створення водія');
+        // Можна вивести в консоль для контролю, скільки американського сміття ми відсікли
+        const skippedCount = rawItems.length - items.length;
+        if (skippedCount > 0) {
+            console.log(`[Filter] Відсічено ${skippedCount} лотів з американського eBay (EBAY_US)`);
+        }
+
+        console.log(items);
+
+        for (const item of items) {
+            // Валідація на ключові слова-паразити (можна теж винести в БД як глобальний чорний список)
+            const titleLower = item.title.toLowerCase();
+            if (titleLower.includes('box only')) {
+                continue;
+            }
+
+            // Перевірка дедуплікації
+            const alreadyTracked = await prisma.trackedItem.findUnique({
+                where: { id: item.itemId },
+            });
+            if (alreadyTracked) continue;
+
+            // Логуємо в базу, що ми його знайшли
+            await prisma.trackedItem.create({
+                data: {
+                    id: item.itemId,
+                    title: item.title,
+                    price: parseFloat(item.price.value),
+                    currency: item.price.currency,
+                    url: item.itemWebUrl,
+                    marketplace: marketplaceId,
+                },
+            });
+
+            // Надсилаємо сповіщення
+            await sendTelegramAlert(item, marketplaceId, config);
+        }
+    } catch (error: any) {
+        console.error(
+            `Помилка парсингу для запиту "${config.query}" на ${marketplaceId}:`,
+            error.message,
+        );
     }
-
-    const driver = await prisma.driver.create({
-        data: {
-            phone: user.phone,
-            carNumber: user.carNumber,
-            tankVolume: user.tankVolume,
-            chatId,
-            step: 0,
-        },
-    });
-
-    loggerBot.sendMessage(
-        loggerChat,
-        `Водія створено: телефон ` + driver.phone + ` номер авто: ` + driver.carNumber,
-    );
-    return driver;
 };
 
-const commands = [
-    { command: '/start', description: 'Старт' },
-    { command: '/zapravka', description: 'Заправка' },
-    { command: '/den', description: 'Робочий день' },
-];
+// Головний цикл
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-bot.setMyCommands(commands)
-    .then(() => console.log('Команди оновлено'))
-    .catch(console.error);
-
-bot.onText(/\/start/, async (msg) => {
-    const chatId = msg.chat.id;
-
-    const driver = await prisma.driver.findUnique({
-        where: { chatId: BigInt(chatId) },
+export const startHunting = async () => {
+    // 1. Беремо з бази тільки активні фільтри
+    const activeConfigs = await prisma.searchConfig.findMany({
+        where: { isActive: true },
     });
 
-    if (driver) {
-        const shiftClearing = await prisma.driver.update({
-            where: {
-                id: driver?.id,
-            },
-            data: {
-                step: 0,
-            },
-        });
+    if (activeConfigs.length === 0) return;
 
-        return bot.sendMessage(
-            chatId,
-            'Головне меню',
+    const DEFAULT_DELAY = 12000;
 
-            {
-                reply_markup: {
-                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
-                    one_time_keyboard: false,
-                    resize_keyboard: true,
-                },
-            },
-        );
-    }
-    users[chatId] = { step: 1 };
+    const token = await getValidToken();
 
-    bot.sendMessage(chatId, 'Привіт! Для початку поділіться своїм номером телефону:', {
-        reply_markup: {
-            keyboard: [[{ text: 'Надіслати контакт', request_contact: true }]],
-            one_time_keyboard: false,
-            resize_keyboard: true,
-        },
-    });
-});
+    // 2. Проходимо по кожному фільтру послідовно
+    for (const config of activeConfigs) {
+        // Змінюємо Promise.all на послідовний цикл по маркетплейсах
+        for (const marketplaceId of MARKETPLACES) {
+            try {
+                // Виконуємо запит для конкретного маркетплейса
+                await checkLotsForConfig(config, marketplaceId, token);
 
-bot.on('contact', async (msg: Message) => {
-    const chatId = msg.chat.id;
+                // Беремо індивідуальну затримку з бази (якщо додаси таке поле) або дефолтну
+                //const delay = config.delayMs ?? DEFAULT_DELAY;
 
-    const driver = await prisma.driver.findUnique({
-        where: { chatId: BigInt(chatId) },
-    });
-
-    if (driver)
-        return bot.sendMessage(
-            chatId,
-            'Ви вже зареєстровані, можете додавати заправки',
-
-            {
-                reply_markup: {
-                    keyboard: [[{ text: 'Заправка⛽️' }]],
-                    one_time_keyboard: false,
-                    resize_keyboard: true,
-                },
-            },
-        );
-
-    if (!users[chatId]) return;
-
-    users[chatId].phone = msg.contact?.phone_number || '';
-    users[chatId].step = 2;
-
-    bot.sendMessage(chatId, 'Дякуємо! Тепер введіть номер вашого авто:');
-});
-
-bot.on('message', async (msg: Message) => {
-    const chatId = msg.chat.id;
-    const text = msg.text;
-
-    const driver = await prisma.driver.findUnique({
-        where: { chatId: BigInt(chatId) },
-    });
-
-    if (text === 'Головне меню 🏠') {
-        const shiftClearing = await prisma.driver.update({
-            where: {
-                id: driver?.id,
-            },
-            data: {
-                step: 0,
-            },
-        });
-        bot.sendMessage(
-            chatId,
-            'Головне меню',
-
-            {
-                reply_markup: {
-                    keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
-                    one_time_keyboard: false,
-                    resize_keyboard: true,
-                },
-            },
-        );
-    }
-
-    if (!users[chatId]) return;
-
-    const user = users[chatId];
-
-    if (user.step === 2 && text) {
-        user.carNumber = text;
-        user.step = 3;
-        bot.sendMessage(chatId, 'Чудово! Введіть реальний об’єм вашого бака (в літрах):');
-    } else if (user.step === 3 && text) {
-        const volume = Number(text);
-        if (isNaN(volume)) {
-            bot.sendMessage(chatId, 'Будь ласка, введіть число (об’єм бака в літрах).');
-            return;
-        }
-        user.tankVolume = volume;
-        user.step = 4;
-
-        const driver = await createDriver(chatId);
-
-        if (driver) {
-            bot.sendMessage(
-                chatId,
-                `✅ Реєстрацію завершено!\n\n📱 Телефон: ${driver.phone}\n🚘 Авто: ${driver.carNumber}\n⛽ Бак: ${driver.tankVolume} л\n\nТепер ви можете реєструвати ваші заправки.`,
-                {
-                    reply_markup: {
-                        keyboard: [[{ text: 'Заправка⛽️' }, { text: 'Робочий день ⏳' }]],
-                        one_time_keyboard: false,
-                        resize_keyboard: true,
-                    },
-                },
-            );
-        } else {
-            bot.sendMessage(
-                chatId,
-                'Не вдалося завершити реєстрацію, спробуйте спочатку або зверніться до адміністратора',
-                {
-                    reply_markup: {
-                        keyboard: [[{ text: '/start' }]],
-                        resize_keyboard: true,
-                        one_time_keyboard: true,
-                    },
-                },
-            );
+                console.log(`Чекаємо ${DEFAULT_DELAY}мс перед наступним запитом...`);
+                await sleep(DEFAULT_DELAY);
+            } catch (error) {
+                console.error(
+                    `Помилка під час перевірки ${marketplaceId} для конфігу ${config.id}:`,
+                    error,
+                );
+                // Навіть якщо сталася помилка, варто почекати перед наступним маркетплейсом
+                await sleep(DEFAULT_DELAY);
+            }
         }
     }
-});
-
-export { bot, loggerBot, loggerChat, adminBot };
+};
