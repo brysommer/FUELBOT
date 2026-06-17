@@ -39,8 +39,24 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
 
         const rawItems = response.data.itemSummaries || [];
 
-        // 2. Одразу відфільтровуємо: залишаємо ЛИШЕ ті, де маркетплейс створення НЕ 'EBAY_US'
-        const items = rawItems.filter((item: any) => item.listingMarketplaceId !== 'EBAY_US');
+        const items = rawItems.filter((item: any) => {
+            // А. Відсікаємо американський ринок
+            if (item.listingMarketplaceId === 'EBAY_US') return false;
+
+            // Б. Залишаємо ТІЛЬКИ категоріЯ 9355 (Мобільні телефони)
+            // Оскільки це масив, перевіряємо через .includes()
+            if (!item.leafCategoryIds || !item.leafCategoryIds.includes('9355')) return false;
+
+            // В. Цікавить ЛИШЕ б/у (3000) та під відновлення/запчастини (7000)
+            // Усі інші стани (1000 - Новий, 1500, 2000, 2500 - Refurbished) ігноруємо
+            if (item.conditionId !== '3000' && item.conditionId !== '7000') return false;
+
+            // Г. Мінусуємо оголошення-варіації (китайські списки-розкладки)
+            if (item.itemGroupType === 'SELLER_DEFINED_VARIATIONS') return false;
+
+            // Якщо лот пройшов усі перевірки — залишаємо його
+            return true;
+        });
 
         // Можна вивести в консоль для контролю, скільки американського сміття ми відсікли
         const skippedCount = rawItems.length - items.length;
@@ -48,7 +64,7 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
             console.log(`[Filter] Відсічено ${skippedCount} лотів з американського eBay (EBAY_US)`);
         }
 
-        console.log(items);
+        //     console.log(items);
 
         for (const item of items) {
             // Валідація на ключові слова-паразити (можна теж винести в БД як глобальний чорний список)
