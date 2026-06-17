@@ -10,6 +10,19 @@ interface EbayItem {
     price: { value: string; currency: string };
     itemWebUrl: string;
     image?: { imageUrl: string };
+    // Нові поля для глибокого аналізу
+    listingMarketplaceId: string;
+    itemCreationDate: string; // Формат ISO рядка, наприклад '2026-06-17T...'
+    itemLocation?: {
+        country: string; // Код країни: DE, FR, PL, US тощо
+        postalCode?: string;
+    };
+    seller?: {
+        username: string;
+        feedbackScore: number; // Кількість відгуків
+        feedbackPercentage: string; // Відсоток позитивних відгуків
+        sellerAccountType: 'INDIVIDUAL' | 'BUSINESS';
+    };
 }
 
 export const sendTelegramAlert = async (item: EbayItem, marketplaceId: string, config: any) => {
@@ -31,7 +44,22 @@ export const sendTelegramAlert = async (item: EbayItem, marketplaceId: string, c
             ? '🇮🇹 IT'
             : marketplaceId;
 
-    // Текст повідомлення у форматі HTML
+    // 1. Розрахунок секунд з моменту створення лоту
+    const creationMs = new Date(item.itemCreationDate).getTime();
+    const secondsAgo = Math.floor((Date.now() - creationMs) / 1000);
+    const timeInfo = secondsAgo >= 0 ? `${secondsAgo} сек тому` : 'щойно';
+
+    // 2. Країна знаходження лоту
+    const locationCountry = item.itemLocation?.country || '??';
+
+    // 3. Лаконічні характеристики продавця
+    let sellerInfo = 'немає даних';
+    if (item.seller) {
+        const type = item.seller.sellerAccountType === 'BUSINESS' ? 'БІЗНЕС' : 'ПРИВАТ';
+        sellerInfo = `${item.seller.username} (${item.seller.feedbackScore}⭐ | ${item.seller.feedbackPercentage}%) [${type}]`;
+    }
+
+    // Текст повідомлення у форматі HTML (строгий та лаконічний)
     const messageText = `
 📱 <b>Знайдено новий лот!</b> [${flag}]
 
@@ -40,6 +68,9 @@ export const sendTelegramAlert = async (item: EbayItem, marketplaceId: string, c
 
 💰 <b>Ціна:</b> ${item.price.value} ${item.price.currency}
 📦 <b>Тип:</b> Buy It Now
+⏱ <b>Створено:</b> ${timeInfo}
+📍 <b>Локація товару:</b> ${locationCountry}
+👤 <b>Продавець:</b> <code>${sellerInfo}</code>
 
 <i>Макс. ліміт у фільтрі: ${config.maxPrice} ${config.currency}</i>
 `;
@@ -59,7 +90,6 @@ export const sendTelegramAlert = async (item: EbayItem, marketplaceId: string, c
 
     try {
         if (item.image?.imageUrl) {
-            // У node-telegram-bot-api для sendPhoto опції йдуть третім аргументом, а caption передається всередині опцій
             await bot.sendPhoto(CHAT_ID, item.image.imageUrl, {
                 ...options,
                 caption: messageText,
