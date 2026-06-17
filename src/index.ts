@@ -64,8 +64,6 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
             console.log(`[Filter] Відсічено ${skippedCount} лотів з американського eBay (EBAY_US)`);
         }
 
-        //     console.log(items);
-
         for (const item of items) {
             // Валідація на ключові слова-паразити (можна теж винести в БД як глобальний чорний список)
             const titleLower = item.title.toLowerCase();
@@ -91,7 +89,7 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
                 },
             });
 
-            getItemDescription(item, token);
+            await getItemDescription(item.itemId, token);
 
             // Надсилаємо сповіщення
             await sendTelegramAlert(item, marketplaceId, config);

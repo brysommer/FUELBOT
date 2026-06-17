@@ -39,9 +39,6 @@ async function mainEngine() {
             continue;
         }
 
-        console.log(
-            `=== 🏁 Старт нового кола пошуку лотів: ${new Date().toLocaleTimeString()} ===`,
-        );
         const startTime = Date.now();
 
         try {
@@ -61,5 +58,4 @@ async function mainEngine() {
 }
 
 // Запуск бота
-console.log('🚀 Бот-мисливець ініціалізований. Запуск головного двигуна...');
 mainEngine();

@@ -8,8 +8,6 @@ export const getEbayAppToken = async (): Promise<string> => {
     // 1. Кодуємо App ID (Client ID) та Cert ID (Client Secret) у формат Base64
     const credentials = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
 
-    console.log(CLIENT_ID + CLIENT_SECRET);
-
     try {
         const response = await axios.post(
             'https://api.ebay.com/identity/v1/oauth2/token',
