@@ -1,8 +1,8 @@
 import TelegramBot from 'node-telegram-bot-api';
 
 // Ініціалізація бота (токен беремо з екологічних змінних .env)
-const bot = new TelegramBot(process.env.ADMIN_BOT_BOT!, { polling: false });
-const CHAT_ID = process.env.LOGGER_CHAT!; // Твій особистий ID чату
+export const bot = new TelegramBot(process.env.ADMIN_BOT_BOT!, { polling: false });
+export const CHAT_ID = process.env.LOGGER_CHAT!; // Твій особистий ID чату
 
 interface EbayItem {
     itemId: string;

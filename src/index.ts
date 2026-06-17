@@ -2,8 +2,8 @@ import 'dotenv/config';
 import { prisma } from './lib/prisma';
 import axios from 'axios';
 import { sendTelegramAlert } from './sendTGalert';
-import { getEbayAppToken } from './getEbayToken';
 import { getValidToken } from './tokenrefresh';
+import { getItemDescription } from './itemDetails';
 
 const MARKETPLACES = [
     'EBAY_DE', // Німеччина
@@ -90,6 +90,8 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
                     marketplace: marketplaceId,
                 },
             });
+
+            getItemDescription(item, token);
 
             // Надсилаємо сповіщення
             await sendTelegramAlert(item, marketplaceId, config);
