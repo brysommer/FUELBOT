@@ -6,14 +6,6 @@ import { getValidToken } from './tokenrefresh';
 import { getItemDescription } from './itemDetails';
 import { analyzeDescriptionWithAI } from './deepseak';
 
-const MARKETPLACES = [
-    'EBAY_DE', // Німеччина
-    'EBAY_FR', // Франція
-    'EBAY_IT', // Італія
-    'EBAY_ES', // Іспанія
-    'EBAY_PL', // Польща
-];
-
 interface UserData {
     step: number;
     phone?: string;
@@ -131,6 +123,12 @@ export const startHunting = async () => {
     const DEFAULT_DELAY = 12000;
 
     const token = await getValidToken();
+
+    const Markets = await prisma.appConfig.findFirst({
+        where: { key: 'Markets' },
+    });
+
+    const MARKETPLACES = Markets?.value || ['EBAY_DE', 'EBAY_FR', 'EBAY_IT', 'EBAY_ES', 'EBAY_PL'];
 
     // 2. Проходимо по кожному фільтру послідовно
     for (const config of activeConfigs) {
