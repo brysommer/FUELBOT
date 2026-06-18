@@ -32,9 +32,13 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
 
         const rawItems = response.data.itemSummaries || [];
 
+        const skipMarkets = await prisma.appConfig.findFirst({
+            where: { key: 'SkipMarkets' },
+        });
+
         const items = rawItems.filter((item: any) => {
             // А. Відсікаємо американський ринок
-            if (item.listingMarketplaceId === 'EBAY_US') return false;
+            if (skipMarkets?.value?.includes(item.listingMarketplaceId)) return false;
 
             // Б. Залишаємо ТІЛЬКИ категоріЯ 9355 (Мобільні телефони)
             // Оскільки це масив, перевіряємо через .includes()
