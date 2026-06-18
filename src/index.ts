@@ -1,9 +1,10 @@
 import 'dotenv/config';
 import { prisma } from './lib/prisma';
 import axios from 'axios';
-import { sendTelegramAlert } from './sendTGalert';
+import { CHAT_ID, bot, sendTelegramAlert } from './sendTGalert';
 import { getValidToken } from './tokenrefresh';
 import { getItemDescription } from './itemDetails';
+import { analyzeDescriptionWithAI } from './deepseak';
 
 const MARKETPLACES = [
     'EBAY_DE', // Німеччина
@@ -89,7 +90,21 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
                 },
             });
 
-            await getItemDescription(item.itemId, token);
+            const fullItemDetails = await getItemDescription(item.itemId, token);
+
+            const summary = await analyzeDescriptionWithAI(
+                fullItemDetails.description,
+                fullItemDetails.title,
+            );
+
+            if (summary.isTrash) {
+                console.log(
+                    `[AI Filter] Пропущено сміттєвий лот (iCloud/Блок): ${response.data.title}`,
+                );
+                continue; // Зупиняє поточну ітерацію і переходить до НАСТУПНОГО лоту в циклі
+            }
+
+            await bot.sendMessage(CHAT_ID, summary.text);
 
             // Надсилаємо сповіщення
             await sendTelegramAlert(item, marketplaceId, config);

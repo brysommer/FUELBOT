@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import { prisma } from './lib/prisma';
 
 // Ініціалізація бота (токен беремо з екологічних змінних .env)
 export const bot = new TelegramBot(process.env.ADMIN_BOT_BOT!, { polling: false });
@@ -50,8 +51,34 @@ export const sendTelegramAlert = async (item: EbayItem, marketplaceId: string, c
     const timeInfo = secondsAgo >= 0 ? `${secondsAgo} сек тому` : 'щойно';
 
     // 2. Країна знаходження лоту
+    // ... (твій попередній код у sendTelegramAlert)
+
     const locationCountry = item.itemLocation?.country || '??';
 
+    // Створюємо карту локальних доменів eBay на основі marketplaceId
+    const ebayDomains: Record<string, string> = {
+        EBAY_DE: 'ebay.de',
+        EBAY_PL: 'ebay.pl',
+        EBAY_FR: 'ebay.fr',
+        EBAY_IT: 'ebay.it',
+        EBAY_ES: 'ebay.es',
+        EBAY_GB: 'ebay.co.uk',
+        EBAY_US: 'ebay.com',
+        EBAY_NL: 'ebay.nl',
+        EBAY_CH: 'ebay.ch',
+    };
+
+    // Визначаємо потрібний домен (якщо країни немає в списку, дефолтимо на німецький або американський)
+    const currentDomain = ebayDomains[marketplaceId] || 'ebay.de';
+
+    // Формуємо localUrl прямо на домашній маркетплейс лота
+    const localUrl = `https://www.${currentDomain}/itm/${legacyItemId}`;
+
+    const currencyRate = await prisma.appConfig.findFirst({
+        where: {
+            key: 'EURUSD',
+        },
+    });
     // 3. Лаконічні характеристики продавця
     let sellerInfo = 'немає даних';
     if (item.seller) {
@@ -66,13 +93,17 @@ export const sendTelegramAlert = async (item: EbayItem, marketplaceId: string, c
 <b>Назва:</b> ${item.title}
 <b>Цільовий пошук:</b> <code>${config.query}</code>
 
-💰 <b>Ціна:</b> ${item.price.value} ${item.price.currency}
+💰 <b>Ціна:</b> ${item.price.value} ${item.price.currency} (${
+        (Number(item.price.value) * Number(currencyRate?.value)) | 1.15
+    })
 📦 <b>Тип:</b> Buy It Now
 ⏱ <b>Створено:</b> ${timeInfo}
 📍 <b>Локація товару:</b> ${locationCountry}
 👤 <b>Продавець:</b> <code>${sellerInfo}</code>
 
-<i>Макс. ліміт у фільтрі: ${config.maxPrice} ${config.currency}</i>
+<i>Макс. ліміт у фільтрі ${config.query}: ${config.maxPrice} ${config.currency} (${
+        (config.maxPrice * Number(currencyRate?.value)) | 1.15
+    } USD )</i>
 `;
 
     // Опції для клавіатури з кнопками швидкого переходу
@@ -82,7 +113,7 @@ export const sendTelegramAlert = async (item: EbayItem, marketplaceId: string, c
             inline_keyboard: [
                 [
                     { text: '📱 Відкрити в Додатку', url: appUrl },
-                    { text: '🌐 Відкрити в Браузері', url: webUrl },
+                    { text: '🌐 Локальний ібей', url: localUrl },
                 ],
             ],
         },
