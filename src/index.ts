@@ -14,6 +14,7 @@ interface UserData {
 }
 
 const checkLotsForConfig = async (config: any, marketplaceId: string, token: string) => {
+    console.log('marketplaceID' + marketplaceId);
     try {
         const response = await axios.get('https://api.ebay.com/buy/browse/v1/item_summary/search', {
             headers: {
@@ -36,9 +37,14 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
             where: { key: 'SkipMarkets' },
         });
 
+        const skipMarketsArray = skipMarkets?.value ? JSON.parse(skipMarkets?.value) : [];
+
         const items = rawItems.filter((item: any) => {
             // А. Відсікаємо американський ринок
-            if (skipMarkets?.value?.includes(item.listingMarketplaceId)) return false;
+            if (skipMarketsArray.includes(item.listingMarketplaceId)) {
+                console.log('skip markets' + skipMarketsArray);
+                return false;
+            }
 
             // Б. Залишаємо ТІЛЬКИ категоріЯ 9355 (Мобільні телефони)
             // Оскільки це масив, перевіряємо через .includes()
@@ -58,7 +64,7 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
         // Можна вивести в консоль для контролю, скільки американського сміття ми відсікли
         const skippedCount = rawItems.length - items.length;
         if (skippedCount > 0) {
-            console.log(`[Filter] Відсічено ${skippedCount} лотів з американського eBay (EBAY_US)`);
+            // console.log(`[Filter] Відсічено ${skippedCount} лотів з американського eBay (EBAY_US)`);
         }
 
         for (const item of items) {
@@ -132,7 +138,9 @@ export const startHunting = async () => {
         where: { key: 'Markets' },
     });
 
-    const MARKETPLACES = Markets?.value || ['EBAY_DE', 'EBAY_FR', 'EBAY_IT', 'EBAY_ES', 'EBAY_PL'];
+    const MARKETPLACES = Markets?.value
+        ? JSON.parse(Markets?.value)
+        : ['EBAY_DE', 'EBAY_FR', 'EBAY_IT', 'EBAY_ES', 'EBAY_PL'];
 
     // 2. Проходимо по кожному фільтру послідовно
     for (const config of activeConfigs) {
