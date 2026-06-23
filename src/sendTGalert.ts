@@ -55,6 +55,8 @@ export const sendTelegramAlert = async (item: EbayItem, marketplaceId: string, c
 
     const locationCountry = item.itemLocation?.country || '??';
 
+    console.log(`location country: ${item.itemLocation?.country}`);
+
     // Створюємо карту локальних доменів eBay на основі marketplaceId
     const ebayDomains: Record<string, string> = {
         EBAY_DE: 'ebay.de',
