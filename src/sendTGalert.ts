@@ -59,19 +59,19 @@ export const sendTelegramAlert = async (item: EbayItem, marketplaceId: string, c
 
     // Створюємо карту локальних доменів eBay на основі marketplaceId
     const ebayDomains: Record<string, string> = {
-        EBAY_DE: 'ebay.de',
-        EBAY_PL: 'ebay.pl',
-        EBAY_FR: 'ebay.fr',
-        EBAY_IT: 'ebay.it',
-        EBAY_ES: 'ebay.es',
-        EBAY_GB: 'ebay.co.uk',
-        EBAY_US: 'ebay.com',
-        EBAY_NL: 'ebay.nl',
-        EBAY_CH: 'ebay.ch',
+        DE: 'ebay.de',
+        PL: 'ebay.pl',
+        FR: 'ebay.fr',
+        IT: 'ebay.it',
+        ES: 'ebay.es',
+        GB: 'ebay.co.uk',
+        US: 'ebay.com',
+        NL: 'ebay.nl',
+        CH: 'ebay.ch',
     };
 
     // Визначаємо потрібний домен (якщо країни немає в списку, дефолтимо на німецький або американський)
-    const currentDomain = ebayDomains[marketplaceId] || 'ebay.de';
+    const currentDomain = ebayDomains[locationCountry] || 'ebay.de';
 
     // Формуємо localUrl прямо на домашній маркетплейс лота
     const localUrl = `https://www.${currentDomain}/itm/${legacyItemId}`;
