@@ -57,14 +57,13 @@ VERDICT: [БЛОК або ПРОПУСК]
 
         // Витягуємо технічний VERDICT з тексту за допомогою регулярки
         const verdictMatch = aiText.match(/VERDICT:\s*(БЛОК|ПРОПУСК)/i);
-        const verdict = verdictMatch ? verdictMatch[1].toUpperCase() : 'ПРОПУСК';
 
-        // Очищаємо сам текст екрану від технічного рядка, щоб не світити його в Телеграмі
-        const cleanTelegramText = aiText.replace(/VERDICT:\s*(БЛОК|ПРОПУСК)/i, '').trim();
+        console.log(verdictMatch);
+        const verdict = verdictMatch ? verdictMatch[1].toUpperCase() : 'ПРОПУСК';
 
         // Повертаємо об'єкт із текстом та рішенням
         return {
-            text: cleanTelegramText,
+            text: aiText,
             isTrash: verdict === 'БЛОК',
         };
     } catch (error: any) {

@@ -10,8 +10,6 @@ export const getItemDescription = async (itemId: string, token: string): Promise
             },
         });
 
-        console.log(response.data);
-
         // Опис зазвичай повертається в полі description (часто у форматі HTML)
         return response.data;
     } catch (error) {

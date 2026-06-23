@@ -61,12 +61,6 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
             return true;
         });
 
-        // Можна вивести в консоль для контролю, скільки американського сміття ми відсікли
-        const skippedCount = rawItems.length - items.length;
-        if (skippedCount > 0) {
-            // console.log(`[Filter] Відсічено ${skippedCount} лотів з американського eBay (EBAY_US)`);
-        }
-
         for (const item of items) {
             // Валідація на ключові слова-паразити (можна теж винести в БД як глобальний чорний список)
             const titleLower = item.title.toLowerCase();
@@ -101,7 +95,7 @@ const checkLotsForConfig = async (config: any, marketplaceId: string, token: str
 
             if (summary.isTrash) {
                 console.log(
-                    `[AI Filter] Пропущено сміттєвий лот (iCloud/Блок): ${response.data.title}`,
+                    `[AI Filter] Пропущено сміттєвий лот (iCloud/Блок): ${fullItemDetails.title}`,
                 );
                 continue; // Зупиняє поточну ітерацію і переходить до НАСТУПНОГО лоту в циклі
             }
