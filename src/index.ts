@@ -147,8 +147,15 @@ export const startHunting = async () => {
                 // Беремо індивідуальну затримку з бази (якщо додаси таке поле) або дефолтну
                 //const delay = config.delayMs ?? DEFAULT_DELAY;
 
-                console.log(`Чекаємо ${DEFAULT_DELAY}мс перед наступним запитом...`);
-                await sleep(DEFAULT_DELAY);
+                const dalay = await prisma.appConfig.findFirst({
+                    where: { key: 'delayMs' },
+                });
+
+                console.log(
+                    `Чекаємо ${Number(dalay?.value) || DEFAULT_DELAY}мс перед наступним запитом...`,
+                );
+
+                await sleep(Number(dalay?.value) || DEFAULT_DELAY);
             } catch (error) {
                 console.error(
                     `Помилка під час перевірки ${marketplaceId} для конфігу ${config.id}:`,
